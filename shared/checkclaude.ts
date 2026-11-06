@@ -39,6 +39,10 @@ export const jobSchema = z.object({
   id: z.string(),
   mode: runModeSchema,
   status: z.enum(["running", "done", "failed"]),
+  /** Which step is running: browser signal collection or the environment check. */
+  stage: z.enum(["browser", "check"]).nullable(),
+  /** Short summary of the browser probe result, for the screen and logs. */
+  probe: z.string().nullable(),
   startedAt: z.string(),
   finishedAt: z.string().nullable(),
   score: z.number().nullable(),
@@ -85,6 +89,11 @@ export const settingsDefinition = defineSettings({
     /** Empty means the bundled script; set a path to use another claude-check.sh. */
     scriptPath: z.string().default(""),
     timeoutSeconds: z.number().int().min(30).max(900).default(240),
+    /**
+     * Browser signals come from CheckClaude's own probe, run on demand.
+     * webview is silent, browser opens the default browser for the full fingerprint.
+     */
+    browserProbe: z.enum(["webview", "browser", "off"]).default("webview"),
   }),
 });
 

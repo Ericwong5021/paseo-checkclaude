@@ -6,8 +6,8 @@ CheckClaude 给这台机器打分：Claude 和 Claude Code 看到的画像有多
 
 评分来自 [CheckClaude](https://github.com/zzusec/CheckClaude)，与它的菜单栏 App 和命令行工具
 用同一套权重。插件在 daemon 上运行那个脚本，把结果渲染在 Paseo 里，所以长会话开始前不用离开
-窗口就能体检。插件内置上游的 `claude-check.sh` 和 `auto-timezone.sh`，不需要先安装 CheckClaude
-App。
+窗口就能体检。插件内置上游的 `claude-check.sh`、`auto-timezone.sh`，以及一个用菜单栏 App 自己的
+浏览器采集代码编译的原生探针，不需要安装任何东西，也不会常驻。
 
 ## 准备
 
@@ -23,14 +23,18 @@ App。
   信号背后 24 小时的路由历史在菜单栏 App、CLI 和这个插件之间连续。
 - **脚本路径** 指向另一份 `claude-check.sh`，用来测试改过的版本。
 - **超时** 用来终止卡住的运行，默认 240 秒。
+- **浏览器探针** 可选 `WebView`（静默）、`默认浏览器`（最准，会打开一次标签页）、`关闭`。关掉后
+  浏览器那一组只剩部分得分。
 
 ## 用法
 
 `/checkclaude` 打开界面并开始体检，`/checkclaude fix` 顺带执行可回的自动修复。侧边栏那一行显示
 上一次的分数，命令中心（⌘K）有体检和修复两项，设置页有上面的选项。
 
-浏览器类信号（WebRTC 出口、浏览器时区与语言、Client Hints、字体）只有菜单栏 App 的隐藏 WebView
-能采集。命令行单跑时这些信号停在部分得分，所以在 Paseo 里体检通常比在 App 里低几分。
+浏览器类信号（WebRTC 出口、浏览器时区与语言、字体、渲染）由内置探针采集：它来自 CheckClaude
+菜单栏 App 的隐藏 WebView 代码，每次体检开始时按需运行，写完结果就退出，不留菜单栏图标。
+默认 `WebView` 模式静默、约 5 秒；切成 `默认浏览器` 会打开一次浏览器，能带上 Client Hints 和请求头，
+更接近 Anthropic 实际看到的东西。
 
 自动修复不使用 sudo。需要管理员权限的项目，例如安装 DNS 配置描述文件，会留作手动步骤；已经做
 的改动都能在系统设置里还原。

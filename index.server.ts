@@ -3,7 +3,12 @@ import { jobRpc, runCheckRpc, settingsDefinition, snapshotRpc } from "./shared/c
 import { resolveDataDir, resolveScript, unsupportedReason } from "./server/paths";
 import { getJob, latestJob, readSnapshot, startJob } from "./server/run";
 
-const DEFAULT_SETTINGS = { dataDir: "", scriptPath: "", timeoutSeconds: 240 };
+const DEFAULT_SETTINGS = {
+  dataDir: "",
+  scriptPath: "",
+  timeoutSeconds: 240,
+  browserProbe: "webview" as const,
+};
 
 export default function contribute(server: PluginServerContext) {
   const settings = server.registerSettings(settingsDefinition);
@@ -40,6 +45,7 @@ export default function contribute(server: PluginServerContext) {
         dataDir: values.dataDir,
         scriptPath: values.scriptPath,
         timeoutSeconds: values.timeoutSeconds,
+        browserProbe: values.browserProbe,
       }),
     };
   });

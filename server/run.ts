@@ -3,22 +3,29 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { RunJob, RunMode, Snapshot } from "../shared/checkclaude";
 import { parseStatusFile, stripAnsi } from "./parse";
-import { resolveDataDir, resolveScript, unsupportedReason } from "./paths";
+import { materializeProbe, resolveDataDir, resolveScript, unsupportedReason } from "./paths";
 
 /** Extra PATH entries so a daemon started from Finder still finds curl and friends. */
 const EXTRA_PATH = ["/usr/local/bin", "/opt/homebrew/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"];
 
 const MAX_JOBS = 8;
 
+/** The native probe waits for a browser tab, so it gets a longer budget than the silent mode. */
+const PROBE_TIMEOUT_MS: Record<"webview" | "browser", number> = {
+  webview: 30_000,
+  browser: 150_000,
+};
+
 const jobs = new Map<string, RunJob>();
 let activeJobId: string | null = null;
-let sequence = 0;
 let latest: RunJob | null = null;
+let sequence = 0;
 
 export interface RunOptions {
   dataDir: string;
   scriptPath: string;
   timeoutSeconds: number;
+  browserProbe: "webview" | "browser" | "off";
 }
 
 function clone(job: RunJob): RunJob {
@@ -59,6 +66,8 @@ export function startJob(mode: RunMode, options: RunOptions): RunJob {
     id: `check-${Date.now().toString(36)}-${(sequence += 1)}`,
     mode,
     status: "running",
+    stage: null,
+    probe: null,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     score: null,
@@ -96,6 +105,13 @@ async function execute(job: RunJob, options: RunOptions): Promise<void> {
 
   await fs.mkdir(dataDir, { recursive: true, mode: 0o700 }).catch(() => undefined);
 
+  if (options.browserProbe !== "off") {
+    const note = await runProbe(job, dataDir, options.browserProbe);
+    if (job.status !== "running") return;
+    job.probe = note;
+  }
+
+  job.stage = "check";
   const args = [script];
   if (job.mode === "fix") args.push("--fix");
 
@@ -106,24 +122,117 @@ async function execute(job: RunJob, options: RunOptions): Promise<void> {
     PATH: [process.env.PATH, ...EXTRA_PATH].filter(Boolean).join(":"),
   };
 
-  await new Promise<void>((resolve) => {
+  const result = await runProcess("/bin/bash", args, {
+    cwd: path.dirname(script),
+    env,
+    timeoutMs: options.timeoutSeconds * 1000,
+  });
+
+  if (job.status !== "running") return;
+
+  if (result.timedOut) {
+    finish(job, {
+      error: `CheckClaude timed out after ${options.timeoutSeconds}s.`,
+      report: result.stdout + result.stderr,
+      dataDir,
+    });
+    return;
+  }
+  finish(job, {
+    error: result.code === 0 ? null : `claude-check.sh exited with code ${result.code ?? "unknown"}.`,
+    report: result.stdout + result.stderr,
+    dataDir,
+  });
+}
+
+/**
+ * Runs the bundled probe binary, which is compiled from the CheckClaude menu bar
+ * app's own BrowserProbe/BrowserBridge classes. It writes `browser_signals` into
+ * the data directory and exits, so nothing stays resident.
+ */
+async function runProbe(
+  job: RunJob,
+  dataDir: string,
+  mode: "webview" | "browser",
+): Promise<string> {
+  const binary = await materializeProbe();
+  if (!binary) return "unavailable on this platform";
+
+  job.stage = "browser";
+  const timeoutMs = PROBE_TIMEOUT_MS[mode];
+  const args = [
+    "--out",
+    path.join(dataDir, "browser_signals"),
+    "--mode",
+    mode,
+    "--timeout",
+    String(Math.round(timeoutMs / 1000)),
+  ];
+  if (mode === "browser") args.push("--open");
+
+  const result = await runProcess(binary, args, {
+    cwd: path.dirname(binary),
+    env: { ...process.env, HOME: process.env.HOME ?? "" },
+    timeoutMs,
+  });
+
+  if (job.status !== "running") return result.stdout.trim();
+
+  if (result.timedOut) return `${mode} timed out after ${Math.round(timeoutMs / 1000)}s`;
+
+  const payload = parseProbeOutput(result.stdout);
+  if (payload?.status === "ok") {
+    const seconds = typeof payload.ms === "number" ? ` ${(payload.ms / 1000).toFixed(1)}s` : "";
+    return `${mode} ok${seconds}`;
+  }
+  const detail = typeof payload?.detail === "string" ? `: ${payload.detail}` : "";
+  return `${mode} ${payload?.status ?? "failed"}${detail}`;
+}
+
+function parseProbeOutput(stdout: string): Record<string, unknown> | null {
+  const line = stdout
+    .split("\n")
+    .map((candidate) => candidate.trim())
+    .filter((candidate) => candidate.startsWith("{"))
+    .pop();
+  if (!line) return null;
+  try {
+    const parsed = JSON.parse(line);
+    return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+interface ProcessResult {
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+}
+
+function runProcess(
+  command: string,
+  args: string[],
+  options: { cwd: string; env: NodeJS.ProcessEnv; timeoutMs: number },
+): Promise<ProcessResult> {
+  return new Promise((resolve) => {
     let stdout = "";
     let stderr = "";
+    let timedOut = false;
     let settled = false;
 
-    const child = spawn("/bin/bash", args, {
-      cwd: path.dirname(script),
-      env,
-      timeout: options.timeoutSeconds * 1000,
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      env: options.env,
+      timeout: options.timeoutMs,
       killSignal: "SIGTERM",
     });
 
-    const done = (error: string | null) => {
+    const done = (code: number | null) => {
       if (settled) return;
       settled = true;
-      const report = stripAnsi(`${stdout}${stderr ? `\n${stderr}` : ""}`).trim();
-      finish(job, { error, report, dataDir });
-      resolve();
+      resolve({ code, stdout, stderr, timedOut });
     };
 
     child.stdout?.setEncoding("utf8");
@@ -136,13 +245,13 @@ async function execute(job: RunJob, options: RunOptions): Promise<void> {
       stderr += chunk;
       if (stderr.length > 60_000) stderr = stderr.slice(-40_000);
     });
-    child.on("error", (error) => done(error.message));
+    child.on("error", (error) => {
+      stderr += error.message;
+      done(null);
+    });
     child.on("close", (code, signal) => {
-      if (signal === "SIGTERM" && code !== 0) {
-        done(`CheckClaude timed out after ${options.timeoutSeconds}s.`);
-        return;
-      }
-      done(code === 0 ? null : `claude-check.sh exited with code ${code ?? "unknown"}.`);
+      if (signal === "SIGTERM" && code === null) timedOut = true;
+      done(code);
     });
   });
 }
@@ -151,9 +260,13 @@ function finish(
   job: RunJob,
   input: { error: string | null; report?: string; dataDir: string },
 ): void {
-  if (input.report !== undefined) job.report = input.report.length > 0 ? input.report : null;
+  if (input.report !== undefined) {
+    const report = stripAnsi(input.report).trim();
+    job.report = report.length > 0 ? report : null;
+  }
   job.status = input.error ? "failed" : "done";
   job.error = input.error;
+  job.stage = null;
   job.finishedAt = new Date().toISOString();
   void readSnapshot(input.dataDir).then((snapshot) => {
     if (snapshot) job.score = snapshot.snapshot?.score ?? null;

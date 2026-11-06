@@ -5,6 +5,7 @@ import {
   SettingsCard,
   SettingsInput,
   SettingsSection,
+  SettingsSelect,
   useToast,
 } from "@getpaseo/plugin/client/ui";
 import { useState } from "react";
@@ -15,6 +16,7 @@ interface Draft {
   dataDir: string;
   scriptPath: string;
   timeout: string;
+  browserProbe: "webview" | "browser" | "off";
 }
 
 export function CheckClaudeSettings({ theme }: PluginSurfaceProps) {
@@ -60,6 +62,7 @@ export function CheckClaudeSettings({ theme }: PluginSurfaceProps) {
     dataDir: values.dataDir,
     scriptPath: values.scriptPath,
     timeout: String(values.timeoutSeconds),
+    browserProbe: values.browserProbe,
   };
 
   function update(patch: Partial<Draft>) {
@@ -77,6 +80,7 @@ export function CheckClaudeSettings({ theme }: PluginSurfaceProps) {
         dataDir: current.dataDir.trim(),
         scriptPath: current.scriptPath.trim(),
         timeoutSeconds,
+        browserProbe: current.browserProbe,
       },
       revision,
     );
@@ -123,6 +127,27 @@ export function CheckClaudeSettings({ theme }: PluginSurfaceProps) {
             placeholder="240"
             initialValue={current.timeout}
             onChangeText={(timeout) => update({ timeout })}
+          />
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Browser signals"
+        info="WebRTC exit, browser timezone and language, fonts, and rendering come from CheckClaude's own probe, compiled from its menu bar app. It runs on demand and exits, so nothing stays resident."
+      >
+        <SettingsCard>
+          <SettingsSelect
+            label="Probe"
+            hint="WebView is silent and takes about five seconds. Browser opens your default browser once for the real fingerprint, including Client Hints."
+            value={current.browserProbe}
+            options={[
+              { label: "WebView (silent)", value: "webview" },
+              { label: "Default browser", value: "browser" },
+              { label: "Off", value: "off" },
+            ]}
+            onValueChange={(browserProbe) =>
+              update({ browserProbe: browserProbe as Draft["browserProbe"] })
+            }
           />
         </SettingsCard>
       </SettingsSection>

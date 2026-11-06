@@ -123,6 +123,8 @@ export function CheckClaudeScreen(props: PluginScreenProps) {
   const result = snapshotQuery.data;
   const snapshot = result?.snapshot ?? null;
   const busy = runCheck.isPending;
+  const stage = runCheck.stage;
+  const probe = runCheck.data?.probe ?? result?.lastJob?.probe ?? null;
   const report = runCheck.data?.report ?? result?.lastReport ?? null;
   const failure = runCheck.data?.status === "failed" ? runCheck.data.error : null;
 
@@ -221,7 +223,9 @@ export function CheckClaudeScreen(props: PluginScreenProps) {
           <View style={[styles.card, styles.row]}>
             <ActivityIndicator color={theme.colors.accent} />
             <Text style={styles.muted}>
-              Probing exit routes, DNS, timezone, and locale. This usually takes 20 to 60 seconds.
+              {stage === "browser"
+                ? "Collecting browser signals with CheckClaude's own probe…"
+                : "Probing exit routes, DNS, timezone, and locale. This usually takes 20 to 60 seconds."}
             </Text>
           </View>
         ) : null}
@@ -240,7 +244,7 @@ export function CheckClaudeScreen(props: PluginScreenProps) {
             <SignalsCard groups={groupSignals(snapshot.signals)} styles={styles} theme={theme} />
             <IssuesCard snapshot={snapshot} styles={styles} theme={theme} />
             <DetailsCard snapshot={snapshot} styles={styles} />
-            {result ? <Footer result={result} styles={styles} /> : null}
+            {result ? <Footer result={result} probe={probe} styles={styles} /> : null}
           </>
         ) : (
           !snapshotQuery.isLoading && result?.supported ? (
@@ -518,13 +522,17 @@ function DetailsCard(props: { snapshot: Snapshot; styles: Styles }) {
 
 function Footer(props: {
   result: NonNullable<ReturnType<typeof useSnapshot>["data"]>;
+  probe: string | null;
   styles: Styles;
 }) {
-  const { result, styles } = props;
+  const { result, probe, styles } = props;
   return (
-    <Text style={styles.muted}>
-      {result.dataDir}
-      {result.scriptPath ? ` · ${result.scriptPath}` : " · bundled script"}
-    </Text>
+    <View style={{ gap: 2 }}>
+      <Text style={styles.muted}>
+        {result.dataDir}
+        {result.scriptPath ? ` · ${result.scriptPath}` : " · bundled script"}
+      </Text>
+      {probe ? <Text style={styles.muted}>Browser probe: {probe}</Text> : null}
+    </View>
   );
 }
