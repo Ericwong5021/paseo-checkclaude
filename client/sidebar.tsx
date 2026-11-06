@@ -3,14 +3,8 @@ import { SidebarRow } from "@getpaseo/plugin/client/ui";
 import { Text } from "react-native";
 import { scoreColor } from "./format";
 import { useSnapshot } from "./hooks";
-import { CheckClaudePopover } from "./popover";
 
-/** Sidebar footer row: shows the last score and opens the score popover. */
-export function CheckClaudeSidebarItem({
-  theme,
-  currentScreen,
-  openPopover,
-}: PluginSidebarItemProps) {
+export function CheckClaudeSidebarItem({ theme, currentScreen, openScreen }: PluginSidebarItemProps) {
   const query = useSnapshot();
   const score = query.data?.snapshot?.score;
   return (
@@ -25,7 +19,7 @@ export function CheckClaudeSidebarItem({
           </Text>
         ) : undefined
       }
-      onPress={() => openPopover(CheckClaudePopover)}
+      onPress={() => openScreen({ screenId: "check" })}
     />
   );
 }
