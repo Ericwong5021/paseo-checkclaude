@@ -20,7 +20,9 @@ Requires Paseo 0.15.1 or newer, and a macOS or Linux daemon.
 
 ## Use
 
-- Sidebar footer row `CheckClaude` shows the last score and opens the screen.
+- Sidebar footer row `CheckClaude` shows the last score; pressing it opens a popover with the total
+  score and one bar per signal group, plus a refresh action and a `Details` button that opens the
+  full screen.
 - `/checkclaude` in the composer opens the screen and starts a check; `/checkclaude fix` also
   applies the safe fixes.
 - Command Center (⌘K): `Check Claude environment`, `Fix Claude environment`.
@@ -70,7 +72,9 @@ missing from the registry; drop the override when the upstream package resolves 
 ```
 index.client.tsx              screen, settings screen, sidebar row, commands
 index.server.ts               RPC handlers and settings registration
-client/                       React Native UI, hooks, formatting
+client/popover.tsx            score popover opened from the sidebar row
+client/checkclaude-screen.tsx full screen with signals, problems, details, report
+client/                       hooks and formatting
 server/                       job runner, status parser, paths, bundled scripts
 shared/checkclaude.ts         Zod contracts for snapshots, jobs, and settings
 ```
