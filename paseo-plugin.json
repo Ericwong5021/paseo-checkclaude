@@ -1,0 +1,10 @@
+{
+  "id": "checkclaude",
+  "name": "CheckClaude",
+  "description": "Score this machine's Claude environment, see what each signal costs, and apply the safe fixes",
+  "icon": "assets/icon.png",
+  "media": [],
+  "requirements": {
+    "paseo": ">=0.15.1"
+  }
+}

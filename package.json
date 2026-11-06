@@ -1,0 +1,45 @@
+{
+  "name": "paseo-checkclaude",
+  "version": "1.0.0",
+  "description": "CheckClaude for Paseo: score this machine's Claude environment from the editor",
+  "license": "MIT",
+  "keywords": [
+    "paseo",
+    "paseo-plugin",
+    "claude",
+    "claude-code",
+    "environment",
+    "fingerprint"
+  ],
+  "files": [
+    "paseo-plugin.json",
+    "OVERVIEW.md",
+    "OVERVIEW.*.md",
+    "README.md",
+    "index.client.ts",
+    "index.client.tsx",
+    "index.server.ts",
+    "index.server.tsx",
+    "assets/",
+    "client/",
+    "server/",
+    "shared/"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "embed": "node server/scripts/generate-embedded.mjs"
+  },
+  "devDependencies": {
+    "@getpaseo/plugin": "0.15.1",
+    "@tanstack/react-query": "^5.90.11",
+    "@types/node": "^24.10.1",
+    "@types/react": "~19.2.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "typescript": "^5.9.3",
+    "zod": "^4.4.3"
+  },
+  "overrides": {
+    "electron-to-chromium": "1.5.477"
+  }
+}
