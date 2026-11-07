@@ -11,8 +11,10 @@ costs and how to get it back.
 ## Install
 
 ```bash
-paseo plugin install github:<owner>/paseo-checkclaude
-# or from a local checkout
+# From GitHub
+paseo plugin install github:Ericwong5021/paseo-checkclaude
+
+# Or from a local checkout
 paseo plugin install /absolute/path/to/paseo-checkclaude
 ```
 
