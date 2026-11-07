@@ -8,8 +8,12 @@
     "paseo-plugin",
     "claude",
     "claude-code",
+    "checkclaude",
     "environment",
-    "fingerprint"
+    "fingerprint",
+    "macos",
+    "plugin",
+    "environment-check"
   ],
   "files": [
     "paseo-plugin.json",
