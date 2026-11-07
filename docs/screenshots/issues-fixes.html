@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckClaude Issues & Fixes</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 40px;
+  min-height: 100vh;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #242424;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+}
+.score-badge {
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.score-badge .score {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4ade80;
+}
+.score-badge .label {
+  font-size: 13px;
+  color: #888;
+}
+.section {
+  margin-bottom: 32px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .count {
+  background: #fbbf24;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.issue-card {
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-left: 3px solid #fbbf24;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.issue-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.issue-points {
+  font-size: 13px;
+  color: #fbbf24;
+  font-weight: 600;
+}
+.issue-description {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.issue-fix {
+  background: #1a1a1a;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fix-text {
+  font-size: 13px;
+  color: #4ade80;
+}
+.fix-button {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fix-section {
+  margin-top: 32px;
+}
+.fix-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fix-title .count {
+  background: #4ade80;
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.fix-card {
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-left: 3px solid #4ade80;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.fix-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.fix-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.fix-card-points {
+  font-size: 13px;
+  color: #4ade80;
+  font-weight: 600;
+}
+.fix-card-description {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.5;
+}
+.footer {
+  margin-top: 24px;
+  text-align: center;
+}
+.apply-all-button {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">Issues & Fixes</div>
+    <div class="score-badge">
+      <div class="score">96</div>
+      <div class="label">/ 100</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">
+      待修复问题
+      <span class="count">2</span>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <div class="issue-title">Client Hints 未启用</div>
+        <div class="issue-points">-1 分</div>
+      </div>
+      <div class="issue-description">
+        浏览器未发送 Sec-CH-UA 系列首标。部分网站使用 Client Hints 进行内容协商和兼容性判断，缺失可能导致页面降级或指纹不完整。
+      </div>
+      <div class="issue-fix">
+        <div class="fix-text">✓ 可自动修复</div>
+        <button class="fix-button">应用修复</button>
+      </div>
+    </div>
+
+    <div class="issue-card">
+      <div class="issue-header">
+        <div class="issue-title">HTTP Accept-Language 不匹配</div>
+        <div class="issue-points">-3 分</div>
+      </div>
+      <div class="issue-description">
+        系统语言为 zh-CN，但 HTTP Accept-Language 首标包含 en-US。浏览器发送的语言首标与系统语言不一致，可能被网站识别为异常。
+      </div>
+      <div class="issue-fix">
+        <div class="fix-text">⚠ 需要手动调整浏览器设置</div>
+        <button class="fix-button" style="background: #666; color: #fff;">查看指南</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fix-section">
+    <div class="fix-title">
+      已通过的检查
+      <span class="count">24</span>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-card-header">
+        <div class="fix-card-title">出口 IP 三路一致</div>
+        <div class="fix-card-points">+14 分</div>
+      </div>
+      <div class="fix-card-description">
+        HTTP、DNS、WebRTC 三路出口 IP 完全一致，无泄漏风险。
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-card-header">
+        <div class="fix-card-title">API 端点全部可达</div>
+        <div class="fix-card-points">+10 分</div>
+      </div>
+      <div class="fix-card-description">
+        api.anthropic.com、statsig.anthropic.com、claude.ai 均可正常访问。
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-card-header">
+        <div class="fix-card-title">DNS 配置正确</div>
+        <div class="fix-card-points">+6 分</div>
+      </div>
+      <div class="fix-card-description">
+        DNS 请求走代理链路，无泄漏到真实网络。
+      </div>
+    </div>
+
+    <div class="fix-card">
+      <div class="fix-card-header">
+        <div class="fix-card-title">WebRTC 无泄漏</div>
+        <div class="fix-card-points">+6 分</div>
+      </div>
+      <div class="fix-card-description">
+        WebRTC 未暴露真实 IP 地址，浏览器指纹安全。
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="apply-all-button">应用所有安全修复</button>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckClaude Sidebar</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 40px;
+  min-height: 100vh;
+}
+.sidebar {
+  width: 280px;
+  background: #242424;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.sidebar-content {
+  padding: 12px;
+}
+.sidebar-item {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #333;
+}
+.sidebar-item-label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.sidebar-item-value {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+}
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #333;
+  background: #1a1a1a;
+}
+.checkclaude-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.checkclaude-row:hover {
+  background: #2a2a2a;
+}
+.checkclaude-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checkclaude-icon {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #000;
+  font-weight: 700;
+}
+.checkclaude-name {
+  font-size: 13px;
+  color: #ccc;
+  font-weight: 500;
+}
+.checkclaude-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4ade80;
+}
+.score-grade {
+  font-size: 11px;
+  color: #888;
+  background: #2a2a2a;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.arrow {
+  color: #666;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Paseo Sidebar</div>
+    <div style="font-size: 12px; color: #666;">⌘B</div>
+  </div>
+
+  <div class="sidebar-content">
+    <div class="sidebar-item">
+      <div class="sidebar-item-label">Agent</div>
+      <div class="sidebar-item-value">Claude Sonnet 4.5</div>
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-item-label">Workspace</div>
+      <div class="sidebar-item-value">paseo-checkclaude</div>
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-item-label">Status</div>
+      <div class="sidebar-item-value" style="color: #4ade80;">● Idle</div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="checkclaude-row">
+      <div class="checkclaude-label">
+        <div class="checkclaude-icon">C</div>
+        <div class="checkclaude-name">CheckClaude</div>
+      </div>
+      <div class="checkclaude-score">
+        <div class="score-value">96</div>
+        <div class="score-grade">优秀</div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; text-align: center; font-size: 12px; color: #666;">
+  点击底栏的 CheckClaude 行打开全屏视图
+</div>
+</body>
+</html>

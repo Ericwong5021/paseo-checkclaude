@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckClaude Settings</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 40px;
+  min-height: 100vh;
+}
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #242424;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.header {
+  margin-bottom: 32px;
+}
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.subtitle {
+  font-size: 14px;
+  color: #888;
+}
+.setting-group {
+  margin-bottom: 28px;
+}
+.setting-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.setting-label .required {
+  color: #f87171;
+  font-size: 12px;
+}
+.setting-description {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.setting-input {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #fff;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.setting-input:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+.setting-select {
+  width: 100%;
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #fff;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.setting-select:focus {
+  outline: none;
+  border-color: #4ade80;
+}
+.radio-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.radio-option {
+  flex: 1;
+  background: #2a2a2a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.radio-option:hover {
+  border-color: #444;
+}
+.radio-option.selected {
+  border-color: #4ade80;
+  background: #1a2a1a;
+}
+.radio-option-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.radio-option-description {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+}
+.radio-option.selected .radio-option-title {
+  color: #4ade80;
+}
+.divider {
+  height: 1px;
+  background: #333;
+  margin: 32px 0;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+}
+.footer-info {
+  font-size: 12px;
+  color: #666;
+}
+.save-button {
+  background: #4ade80;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.save-button:hover {
+  background: #22c55e;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">CheckClaude Settings</div>
+    <div class="subtitle">Settings → Plugins → CheckClaude</div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label">Data directory</div>
+    <div class="setting-description">
+      Where claude_status, route history, and logs live. Empty uses the platform default 
+      (~/Library/Application Support/CheckClaude on macOS).
+    </div>
+    <input type="text" class="setting-input" value="" placeholder="~/Library/Application Support/CheckClaude">
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label">Script path</div>
+    <div class="setting-description">
+      Run another claude-check.sh. Empty uses the bundled copy.
+    </div>
+    <input type="text" class="setting-input" value="" placeholder="bundled">
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-label">Timeout <span class="required">(seconds)</span></div>
+    <div class="setting-description">
+      Kills a stalled run.
+    </div>
+    <input type="number" class="setting-input" value="240">
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="setting-group">
+    <div class="setting-label">Browser probe</div>
+    <div class="setting-description">
+      How to collect browser fingerprint signals. WebView is silent, Default browser opens once for full fingerprint including Client Hints.
+    </div>
+    <div class="radio-group">
+      <div class="radio-option selected">
+        <div class="radio-option-title">WebView</div>
+        <div class="radio-option-description">Silent, ~5s, collects WebRTC/tz/langs/fonts/rendering</div>
+      </div>
+      <div class="radio-option">
+        <div class="radio-option-title">Default browser</div>
+        <div class="radio-option-description">Opens once, full fingerprint + Client Hints</div>
+      </div>
+      <div class="radio-option">
+        <div class="radio-option-title">Off</div>
+        <div class="radio-option-description">Skip browser collection</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-info">Sharing the app's data directory keeps the 24h route history continuous.</div>
+    <button class="save-button">Save</button>
+  </div>
+</div>
+</body>
+</html>

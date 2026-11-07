@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckClaude Score Screen</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  padding: 40px;
+  min-height: 100vh;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #242424;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+}
+.score-section {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.score-circle {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+.score-circle svg {
+  transform: rotate(-90deg);
+  width: 160px;
+  height: 160px;
+}
+.score-circle .bg {
+  fill: none;
+  stroke: #333;
+  stroke-width: 12;
+}
+.score-circle .progress {
+  fill: none;
+  stroke: #4ade80;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 440;
+  stroke-dashoffset: 17.6; /* 96% */
+}
+.score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+}
+.score-label {
+  font-size: 20px;
+  color: #4ade80;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.score-subtitle {
+  font-size: 14px;
+  color: #888;
+}
+.signal-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.signal-group {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #333;
+}
+.signal-group-title {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.signal-group-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.signal-group-score .max {
+  font-size: 16px;
+  color: #666;
+  font-weight: 400;
+}
+.signal-group-bar {
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.signal-group-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  border-radius: 3px;
+}
+.details-section {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #333;
+}
+.details-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #333;
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+.detail-label {
+  font-size: 14px;
+  color: #ccc;
+}
+.detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-value .blur {
+  background: #444;
+  color: #444;
+  padding: 2px 8px;
+  border-radius: 4px;
+  user-select: none;
+  filter: blur(4px);
+}
+.detail-value .status-ok {
+  color: #4ade80;
+}
+.detail-value .status-warn {
+  color: #fbbf24;
+}
+.detail-value .status-err {
+  color: #f87171;
+}
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">CheckClaude Environment</div>
+    <div style="font-size: 14px; color: #888;">2026-11-06 19:54</div>
+  </div>
+
+  <div class="score-section">
+    <div class="score-circle">
+      <svg viewBox="0 0 160 160">
+        <circle class="bg" cx="80" cy="80" r="70"/>
+        <circle class="progress" cx="80" cy="80" r="70"/>
+      </svg>
+      <div class="score-value">96</div>
+    </div>
+    <div class="score-label">优秀</div>
+    <div class="score-subtitle">26 signals · 4 points remaining</div>
+  </div>
+
+  <div class="signal-groups">
+    <div class="signal-group">
+      <div class="signal-group-title">出口一致性</div>
+      <div class="signal-group-score">14<span class="max">/14</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="signal-group">
+      <div class="signal-group-title">API 可达性</div>
+      <div class="signal-group-score">10<span class="max">/10</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="signal-group">
+      <div class="signal-group-title">DNS 配置</div>
+      <div class="signal-group-score">6<span class="max">/6</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="signal-group">
+      <div class="signal-group-title">浏览器指纹</div>
+      <div class="signal-group-score">16<span class="max">/17</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 94%"></div></div>
+    </div>
+    <div class="signal-group">
+      <div class="signal-group-title">时区语言</div>
+      <div class="signal-group-score">5<span class="max">/5</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="signal-group">
+      <div class="signal-group-title">代理形状</div>
+      <div class="signal-group-score">5<span class="max">/5</span></div>
+      <div class="signal-group-bar"><div class="signal-group-bar-fill" style="width: 100%"></div></div>
+    </div>
+  </div>
+
+  <div class="details-section">
+    <div class="details-title">关键信息</div>
+    <div class="detail-row">
+      <div class="detail-label">出口 IP</div>
+      <div class="detail-value"><span class="blur">36.230.1.102</span></div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">地区</div>
+      <div class="detail-value">Taiwan · Taipei</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">代理类型</div>
+      <div class="detail-value"><span class="status-ok">✓</span> Residential</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">边缘机房</div>
+      <div class="detail-value"><span class="status-ok">✓</span> 匹配</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">WebRTC 泄漏</div>
+      <div class="detail-value"><span class="status-ok">✓</span> 无泄漏</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">DNS 泄漏</div>
+      <div class="detail-value"><span class="status-ok">✓</span> 无泄漏</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">Claude Code 版本</div>
+      <div class="detail-value"><span class="status-ok">✓</span> 最新</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Browser probe: webview ok · 5.0s
+  </div>
+</div>
+</body>
+</html>
