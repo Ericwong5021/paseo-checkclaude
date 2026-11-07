@@ -645,7 +645,7 @@ compute_score() {
 
   # ── C. 地区画像一致性 (18) ──
   if [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
-    sig 画像 "三路出口探测" 6 100 "${NETWORK_DETAIL:-探测未完成}（未扣分）"
+    sig 画像 "三路出口探测" 6 100 "未识别（按通过处理，不扣分）"
   elif [[ "$CONSISTENT" == "1" ]]; then
     sig 画像 "三路出口一致" 6 100 "$PROBE_IP"
   else
@@ -939,13 +939,7 @@ compute_score() {
     GRADE="高风险"; VERDICT="$(region_note "$COUNTRY")"
   # 三路出口不一致 = 分流模式，账号画像在多个地区间跳变，是风控最敏感的信号之一。
   # 只按扣分算(才 5 分)会让 80 多分的环境显示"良好"，与红色图标自相矛盾 —— 硬降级。
-  elif [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
-    if [[ -n "$crit_fail" ]]; then
-      GRADE="有风险"; VERDICT="关键项未达标（${crit_fail}）；三路探测未完成：${NETWORK_DETAIL:-结果不足}"
-    else
-      GRADE="探测失败"; VERDICT="探测失败：${NETWORK_DETAIL:-三路结果不足}"
-    fi
-  elif [[ "$CONSISTENT" != "1" ]]; then
+  elif [[ "${NETWORK_STATE:-ok}" == "ok" && "$CONSISTENT" == "0" ]]; then
     GRADE="风险"
     VERDICT="出口 IP 分流(${CN_IP} / ${INTL_IP})，画像跳变，不建议使用"
   # 档位措辞按二元标准: 只有绿档说"可用"，其余一律明说"不建议使用" ——
@@ -962,6 +956,10 @@ compute_score() {
 
   # 分数只是量化参考；关键项失败、不支持地区或三路分流必须覆盖高分。
   classify_risk "$crit_fail"
+  ROUTE_NOTICE=""
+  if [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
+    ROUTE_NOTICE="提示：三路出口暂未识别，按通过处理，不影响评分。"
+  fi
 }
 
 
@@ -1262,7 +1260,7 @@ write_cstatus() {
     echo "intelsources=${INTEL_SOURCES:-未采集}"; echo "intelcount=${INTEL_COUNT:-0}"
     echo "asn2=${ISP2:-?}"; echo "asnmatch=${ASN_MATCH:--1}"
     echo "ipv6=${IPV6:-无}"; echo "ipv6country=${IPV6_CC:-?}"
-    echo "consistent=${CONSISTENT}"; echo "probe_state=${NETWORK_STATE:-unknown}"; echo "probe_detail=${NETWORK_DETAIL:-}"
+    echo "consistent=${CONSISTENT}"; echo "probe_state=${NETWORK_STATE:-unknown}"; echo "probe_detail=${NETWORK_DETAIL:-}"; echo "route_notice=${ROUTE_NOTICE:-}"
     echo "systz=${SYS_TZ}"; echo "iptz=${GFW_TZ:-?}"
     echo "tzoffset=${TZ_OFFSET} ${TZ_ABBR}"; echo "locale=${SYS_LOCALE:-?}"; echo "langs=${SYS_LANGS:-?}"
     echo "countryconfirmed=${COUNTRY_CONFIRMED:-0}"; echo "fixlocale=${FIXABLE_LOCALE_TARGET:-}"
@@ -1328,6 +1326,7 @@ print_report() {
   echo "  ──────────────────────────────────────────────────────"
   echo "  得分  $bar  ${SCORE}/100  【${GRADE}】"
   echo "  结论  ${VERDICT}"
+  [[ -n "${ROUTE_NOTICE:-}" ]] && echo "  ${ROUTE_NOTICE}"
   echo ""
   local group="" g l w p v
   for row in "${SIGNALS[@]}"; do

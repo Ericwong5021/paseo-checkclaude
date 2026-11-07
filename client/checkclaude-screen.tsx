@@ -353,6 +353,7 @@ function ScoreCard(props: {
             {snapshot.riskLevel ? ` · ${snapshot.riskLevel}` : ""}
           </Text>
           <Text style={styles.body}>{snapshot.verdict}</Text>
+          {snapshot.values.route_notice ? <Text style={styles.muted}>{snapshot.values.route_notice}</Text> : null}
           <Text style={styles.muted}>
             {full}/{snapshot.signals.length} signals at full points
             {updatedAt ? ` · checked ${relativeTime(updatedAt)}` : ""}

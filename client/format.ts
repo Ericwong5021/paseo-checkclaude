@@ -88,9 +88,7 @@ export const DETAIL_FIELDS: readonly { key: string; label: string }[] = [
   { key: "brrtc", label: "WebRTC exit" },
 ];
 
-/** An incomplete probe keeps its points, but must not look like verified safety. */
+/** Informational route notices do not change the score's normal color. */
 export function snapshotColor(theme: Theme, snapshot: Snapshot): string {
-  return snapshot.riskLevel === "待复测"
-    ? theme.colors.foregroundMuted
-    : scoreColor(theme, snapshot.score);
+  return scoreColor(theme, snapshot.score);
 }

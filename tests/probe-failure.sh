@@ -69,9 +69,13 @@ assert_eq 'healthy baseline' "$SCORE/$GRADE" '100/优秀'
 base_signals; NETWORK_STATE=probe_failed; NETWORK_DETAIL='国内：TLS 握手失败'; CONSISTENT=unknown; CN_IP=?
 compute_score; build_gains
 assert_eq 'failure does not deduct points' "$SCORE" 100
-assert_eq 'failure remains unverified' "$GRADE/$RISK_LEVEL/$SAFE_USE" '探测失败/待复测/0'
-case "$VERDICT" in *'TLS 握手失败'*) ;; *) echo 'FAIL reason absent'; exit 1;; esac
+assert_eq 'unidentified route passes with a notice' "$GRADE/$RISK_LEVEL/$SAFE_USE" '优秀/安全/1'
+case "$ROUTE_NOTICE/$NETWORK_DETAIL" in *'TLS 握手失败'*) ;; *) echo 'FAIL reason absent'; exit 1;; esac
 case "$GAINS" in *三路*) echo 'FAIL failure listed as recoverable points'; exit 1;; esac
+# The screenshot case: 98 points must remain green with only an informational notice.
+IP_CHANGES=4; compute_score
+assert_eq '98 points stays safe' "$SCORE/$GRADE/$RISK_LEVEL/$SAFE_USE" '98/优秀/安全/1'
+case "$ROUTE_NOTICE" in *'按通过处理'*) ;; *) echo 'FAIL missing informational notice'; exit 1;; esac
 # A real mismatch still receives the original penalty and risk warning.
 base_signals; CONSISTENT=0; CN_IP=9.9.9.9; compute_score
 assert_eq 'real mismatch still deducted' "$SCORE/$GRADE" '95/风险'

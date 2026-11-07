@@ -508,15 +508,16 @@ final class BrowserBridge {
             },1000);
             keepOpen.onclick=()=>{closeCancelled=true;clearInterval(closeTimer);countdownText.textContent="已取消自动关闭，可继续查看报告。";keepOpen.remove();};
             content.replaceChildren();
-            const score=Number(c.score||0), safe=score>=90&&c.grade==="优秀"&&c.consistent==="1";
+            const score=Number(c.score||0), safe=c.safeuse==="1";
             const routeKnown=c.probe_state ? c.probe_state==="ok" : (c.consistent==="0"||c.consistent==="1");
-            const routeLabel=routeKnown?(c.consistent==="1"?"三路一致":"三路不一致"):"探测未完成";
-            const routeClass=routeKnown?(c.consistent==="1"?"good":"bad"):"neutral";
-            const routeDetail=routeKnown?(c.consistent==="1"?"国内、国外与谷歌侧出口一致":"检测到分流、PAC或不同出口"):txt(c.probe_detail||n.network_detail,"探测未完成，不扣分");
+            const routeLabel=routeKnown?(c.consistent==="1"?"三路一致":"三路不一致"):"通过（未识别）";
+            const routeClass=routeKnown?(c.consistent==="1"?"good":"bad"):"good";
+            const routeDetail=routeKnown?(c.consistent==="1"?"国内、国外与谷歌侧出口一致":"检测到分流、PAC或不同出口"):"暂未识别，按通过处理，不扣分";
             const riskLevel=txt(c.risklevel||c.grade),riskClass=riskLevel==="安全"?"good":riskLevel==="低风险"?"caution":riskLevel==="中风险"?"warn":riskLevel==="待复测"?"neutral":"bad";
             const summary=element("div","summary");
             [[score+" / 100","环境得分",riskClass],[riskLevel,"使用风险",riskClass],[txt(c.country),"出口国家",""],[routeLabel,"出口状态",routeClass]].forEach(x=>{const m=element("div","metric "+(x[2]||""));m.append(element("b","",x[0]),element("span","",x[1]));summary.append(m);});
             content.append(summary,element("div","verdict "+(safe?"good":score>=70?"warn":"bad"),txt(c.verdict)));
+            if(c.route_notice)content.append(element("p","desc",c.route_notice));
 
             const matrixSection=element("section"); matrixSection.append(element("h2","","信号一致性矩阵"),element("p","desc","比单项数量更重要的是出口、系统和浏览器彼此是否自洽。")); const matrixHost=element("div","matrix"); matrixSection.append(matrixHost); content.append(matrixSection);
             matrix(matrixHost,"三路出口",routeClass,routeDetail);

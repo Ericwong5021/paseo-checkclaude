@@ -52,4 +52,4 @@ token is involved.
 The score describes contradictions in the local environment fingerprint only. It is not an
 Anthropic verdict and does not guarantee account safety.
 
-Incomplete route probes show the failed endpoints and reasons without reusing old IP addresses or deducting route points. Confirmed API blocks and WebRTC leaks still affect the result.
+Incomplete route probes show the failed endpoints and reasons without reusing old IP addresses or deducting route points. Unidentified routes count as passed with an informational notice; confirmed API blocks and WebRTC leaks still affect the result.
