@@ -66,6 +66,8 @@ export function sortGains(gains: readonly Gain[]): Gain[] {
 
 /** Detail rows worth showing above the fold, keyed by claude_status field. */
 export const DETAIL_FIELDS: readonly { key: string; label: string }[] = [
+  { key: "probe_state", label: "Route probe" },
+  { key: "probe_detail", label: "Route probe details" },
   { key: "ip", label: "Exit IP" },
   { key: "countryname", label: "Country" },
   { key: "city", label: "City" },
@@ -85,3 +87,10 @@ export const DETAIL_FIELDS: readonly { key: string; label: string }[] = [
   { key: "brapi", label: "Browser to API" },
   { key: "brrtc", label: "WebRTC exit" },
 ];
+
+/** An incomplete probe keeps its points, but must not look like verified safety. */
+export function snapshotColor(theme: Theme, snapshot: Snapshot): string {
+  return snapshot.riskLevel === "待复测"
+    ? theme.colors.foregroundMuted
+    : scoreColor(theme, snapshot.score);
+}

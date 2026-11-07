@@ -212,7 +212,7 @@ transient_check_reasons() {
 confirmed_risk_present() {
   [[ -n "${COUNTRY:-}" ]] && in_list "$COUNTRY" "$UNSUPPORTED" && return 0
   [[ "${API_CODE:-}" == "403" || "${API_REGION_BLOCK:-0}" == "1" ]] && return 0
-  [[ "${CONSISTENT:-1}" != "1" ]] && return 0
+  [[ "${NETWORK_STATE:-ok}" == "ok" && "${CONSISTENT:-1}" != "1" ]] && return 0
   [[ "${GFW_TZ:-}" == */* && "${SYS_TZ:-}" != "${GFW_TZ:-}" ]] && return 0
   [[ -n "${IPV6:-}" && -n "${IPV6_CC:-}" && "${IPV6_CC}" != "${COUNTRY:-}" ]] && return 0
   if [[ "${BR_RTC_STATUS:-}" == "ok" && -n "${BR_RTC:-}" && "${BR_RTC}" != *"${PROBE_IP:-?}"* ]]; then
@@ -224,12 +224,14 @@ confirmed_risk_present() {
 
 # ── 采集: 三路出口快照(复用 auto-timezone.sh 的结果) ─────────────
 read_status() {
-  CONSISTENT=""; GFW_IP=""; INTL_IP=""; CN_IP=""; SYS_TZ=""; GFW_TZ=""; GOOGLE=""
+  CONSISTENT=""; GFW_IP=""; INTL_IP=""; CN_IP=""; SYS_TZ=""; GFW_TZ=""; GOOGLE=""; NETWORK_STATE=""; NETWORK_DETAIL=""
   [[ -f "$STATUS" ]] || return 1
   while IFS='=' read -r k v; do
     case "$k" in
       consistent) CONSISTENT="$v" ;; gfw) GFW_IP="$v" ;; intl) INTL_IP="$v" ;;
       cn) CN_IP="$v" ;; tz) SYS_TZ="$v" ;; gfwtz) GFW_TZ="$v" ;; google) GOOGLE="$v" ;;
+      network) NETWORK_STATE="$v" ;;
+      network_detail) NETWORK_DETAIL="$v" ;;
     esac
   done <"$STATUS"
   [[ -n "$CONSISTENT" ]]
@@ -241,8 +243,20 @@ refresh_base() {
     AUTO_TZ_DIR="$DATA_DIR" bash "$TZ_SCRIPT" --check >/dev/null 2>&1
   fi
   read_status || true
-  : "${INTL_IP:=?}" "${GFW_IP:=?}" "${CN_IP:=?}" "${SYS_TZ:=?}" "${GFW_TZ:=}" "${CONSISTENT:=0}"
+  if [[ -z "$NETWORK_STATE" && ( -z "$CONSISTENT" || "$CONSISTENT" == "unknown" ) ]]; then
+    NETWORK_STATE=probe_failed; NETWORK_DETAIL="未获取本轮三路探测结果"
+  fi
+  : "${INTL_IP:=?}" "${GFW_IP:=?}" "${CN_IP:=?}" "${SYS_TZ:=?}" "${GFW_TZ:=}" "${CONSISTENT:=unknown}"
   PROBE_IP="$GFW_IP"; [[ "$PROBE_IP" == "?" ]] && PROBE_IP="$INTL_IP"
+  if [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
+    # Old versions mark preserved snapshots as unstable; discard those addresses.
+    if [[ "$NETWORK_STATE" == "unstable" || ( "$NETWORK_STATE" == "verifying" && "$CONSISTENT" != "unknown" ) ]]; then
+      CN_IP=?; INTL_IP=?; GFW_IP=?; PROBE_IP=?; CONSISTENT=unknown
+    fi
+    local live_ip
+    live_ip=$($CURL https://www.cloudflare.com/cdn-cgi/trace 2>/dev/null | sed -n 's/^ip=//p')
+    if [[ "$live_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then PROBE_IP="$live_ip"; fi
+  fi
 }
 
 # ── 采集: 并行发网络请求(串行会拖到 60 秒以上) ──────────────────
@@ -472,7 +486,9 @@ parse_claude() {
 classify_risk() {
   local critical="${1:-}"
   SAFE_USE=0
-  if [[ "$GRADE" == "优秀" ]]; then
+  if [[ "$GRADE" == "探测失败" ]]; then
+    RISK_LEVEL="待复测"
+  elif [[ "$GRADE" == "优秀" ]]; then
     RISK_LEVEL="安全"; SAFE_USE=1
   elif [[ "$GRADE" == "风险" || "$GRADE" == "高风险" || -n "$critical" ]] \
        || { [[ -n "$COUNTRY" ]] && in_list "$COUNTRY" "$UNSUPPORTED"; }; then
@@ -617,6 +633,8 @@ compute_score() {
   if [[ -n "$CF_IP" && "$PROBE_IP" != "?" ]]; then
     if [[ "$CF_IP" == "$PROBE_IP" ]]; then
       sig 质量 "出口链路单一" 3 100 "$CF_IP"
+    elif [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
+      sig 质量 "出口链路单一" 3 70 "$CF_IP · 辅助探测不完整"
     else
       sig 质量 "出口链路单一" 3 0 "$CF_IP ≠ $PROBE_IP" \
         "Cloudflare 看到的来源 ${CF_IP} 与检测到的出口 ${PROBE_IP} 不同，链路上还有一层代理" "统一走同一出口，避免多层嵌套代理"
@@ -626,7 +644,9 @@ compute_score() {
   fi
 
   # ── C. 地区画像一致性 (18) ──
-  if [[ "$CONSISTENT" == "1" ]]; then
+  if [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
+    sig 画像 "三路出口探测" 6 100 "${NETWORK_DETAIL:-探测未完成}（未扣分）"
+  elif [[ "$CONSISTENT" == "1" ]]; then
     sig 画像 "三路出口一致" 6 100 "$PROBE_IP"
   else
     sig 画像 "三路出口一致" 6 30 "不一致" \
@@ -903,7 +923,9 @@ compute_score() {
     IFS='~' read -r cg cl cw cp cv <<<"$row"
     case "$CRITICAL" in
       *"|$cl|"*)
-        if [[ "$cl" == "WebRTC 出口" ]]; then
+        if [[ "$cl" == "三路出口一致" && "${NETWORK_STATE:-ok}" != "ok" ]]; then
+          continue
+        elif [[ "$cl" == "WebRTC 出口" ]]; then
           [[ ${cp:-0} -eq 0 ]] && crit_fail+="${crit_fail:+、}$cl"
         else
           [[ ${cp:-0} -lt ${cw:-0} ]] && crit_fail+="${crit_fail:+、}$cl"
@@ -917,6 +939,12 @@ compute_score() {
     GRADE="高风险"; VERDICT="$(region_note "$COUNTRY")"
   # 三路出口不一致 = 分流模式，账号画像在多个地区间跳变，是风控最敏感的信号之一。
   # 只按扣分算(才 5 分)会让 80 多分的环境显示"良好"，与红色图标自相矛盾 —— 硬降级。
+  elif [[ "${NETWORK_STATE:-ok}" != "ok" ]]; then
+    if [[ -n "$crit_fail" ]]; then
+      GRADE="有风险"; VERDICT="关键项未达标（${crit_fail}）；三路探测未完成：${NETWORK_DETAIL:-结果不足}"
+    else
+      GRADE="探测失败"; VERDICT="探测失败：${NETWORK_DETAIL:-三路结果不足}"
+    fi
   elif [[ "$CONSISTENT" != "1" ]]; then
     GRADE="风险"
     VERDICT="出口 IP 分流(${CN_IP} / ${INTL_IP})，画像跳变，不建议使用"
@@ -1234,7 +1262,8 @@ write_cstatus() {
     echo "intelsources=${INTEL_SOURCES:-未采集}"; echo "intelcount=${INTEL_COUNT:-0}"
     echo "asn2=${ISP2:-?}"; echo "asnmatch=${ASN_MATCH:--1}"
     echo "ipv6=${IPV6:-无}"; echo "ipv6country=${IPV6_CC:-?}"
-    echo "consistent=${CONSISTENT}"; echo "systz=${SYS_TZ}"; echo "iptz=${GFW_TZ:-?}"
+    echo "consistent=${CONSISTENT}"; echo "probe_state=${NETWORK_STATE:-unknown}"; echo "probe_detail=${NETWORK_DETAIL:-}"
+    echo "systz=${SYS_TZ}"; echo "iptz=${GFW_TZ:-?}"
     echo "tzoffset=${TZ_OFFSET} ${TZ_ABBR}"; echo "locale=${SYS_LOCALE:-?}"; echo "langs=${SYS_LANGS:-?}"
     echo "countryconfirmed=${COUNTRY_CONFIRMED:-0}"; echo "fixlocale=${FIXABLE_LOCALE_TARGET:-}"
     echo "os=${OS_VER}"; echo "proxymode=${PROXY_MODE}"

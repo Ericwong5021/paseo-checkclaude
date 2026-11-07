@@ -215,16 +215,15 @@ load_probe_state() {
   fi
 }
 
-# 网络暂时失败时保留上次确认的三路 IP；没有历史时才显示本次拿到的部分结果。
-write_preserved_status() {
+# 探测不完整时只写入本轮拿到的值；绝不把旧快照伪装成本轮结果。
+write_probe_failed_status() {
   local network="$1" failures="$2" confirmations="$3" detail="$4"
-  local out_consistent="${SNAP_CONSISTENT:-0}"
-  local out_cn="${SNAP_CN:-${cn:-?}}"
-  local out_intl="${SNAP_INTL:-${intl:-?}}"
-  local out_gfw="${SNAP_GFW:-${gfw:-?}}"
-  local out_google="${goog:-${SNAP_GOOGLE:-?}}"
+  local out_cn="${cn:-?}"
+  local out_intl="${intl:-?}"
+  local out_gfw="${gfw:-?}"
+  local out_google="${goog:-?}"
   local out_gfwtz="${STABLE_TIMEZONE:-${SNAP_GFWTZ:-?}}"
-  write_status "$out_consistent" "$out_cn" "$out_intl" "$out_gfw" "$out_google" \
+  write_status "unknown" "$out_cn" "$out_intl" "$out_gfw" "$out_google" \
     "$out_gfwtz" "$network" "$failures" "$confirmations" "$detail" "$LAST_SUCCESS"
 }
 
@@ -258,12 +257,13 @@ sum_decimal() { awk -v a="$(normal_decimal "$1")" -v b="$(normal_decimal "$2")" 
 # IP|TCP connect|TLS|TTFB|累计 total|HTTP code。失败也返回累计耗时，便于趋势图反映真实波动。
 get_first_ip() {
   local url ip body_file metrics connect tls ttfb total code
-  local accumulated="0" last_code="000"
+  local accumulated="0" last_code="000" errors="" rc=0 reason
   for url in "$@"; do
     body_file=$(mktemp "$DATA_DIR/.https-probe.XXXXXX") || return 1
+    rc=0
     metrics=$($CURL -o "$body_file" \
       -w '%{time_connect}|%{time_appconnect}|%{time_starttransfer}|%{time_total}|%{http_code}' \
-      "$url" 2>/dev/null) || true
+      "$url" 2>/dev/null) || rc=$?
     IFS='|' read -r connect tls ttfb total code <<<"$metrics"
     connect=$(normal_decimal "$connect"); tls=$(normal_decimal "$tls")
     ttfb=$(normal_decimal "$ttfb"); total=$(normal_decimal "$total")
@@ -276,8 +276,17 @@ get_first_ip() {
       printf '%s|%s|%s|%s|%s|%s\n' "$ip" "$connect" "$tls" "$ttfb" "$accumulated" "$code"
       return 0
     fi
+    case "$rc" in
+      6) reason="DNS 解析失败" ;;
+      28) reason="连接或 TLS 超时" ;;
+      35) reason="TLS 握手失败" ;;
+      60) reason="TLS 证书验证失败" ;;
+      0) reason="未返回有效 IPv4" ;;
+      *) reason="请求失败(curl $rc)" ;;
+    esac
+    errors+="${errors:+、}${url#https://}: ${reason}(HTTP ${code})"
   done
-  printf '?|0|0|0|%s|%s\n' "$accumulated" "$last_code"
+  printf '?|0|0|0|%s|%s|%s\n' "$accumulated" "$last_code" "$errors"
   return 1
 }
 
@@ -321,10 +330,10 @@ google_reachable() {
 
 # 解析单路探测结果并写入统一指标变量；测试桩只返回 IP 时也保持兼容。
 run_ip_route() {
-  local prefix="$1" func="$2" payload="" rc=0 ip connect tls ttfb total code
+  local prefix="$1" func="$2" payload="" rc=0 ip connect tls ttfb total code error=""
   payload=$($func) || rc=$?
   if [[ "$payload" == *'|'* ]]; then
-    IFS='|' read -r ip connect tls ttfb total code <<<"$payload"
+    IFS='|' read -r ip connect tls ttfb total code error <<<"$payload"
   else
     ip="$payload"; connect=0; tls=0; ttfb=0; total=0; code=0
   fi
@@ -337,6 +346,7 @@ run_ip_route() {
   printf -v "${prefix}_SECONDS" '%s' "$(normal_decimal "$total")"
   [[ "$code" =~ ^[0-9]{3}$ ]] || code=0
   printf -v "${prefix}_HTTP_CODE" '%s' "$code"
+  printf -v "${prefix}_ERROR" '%s' "$error"
   [[ $rc -eq 0 ]]
 }
 
@@ -517,16 +527,16 @@ handle_incomplete_probe() {
   [[ -z "$gfw" ]] && missing="${missing}谷歌侧/"
   missing="${missing%/}"
 
-  if [[ $FAILURE_COUNT -ge $CONFIRM_REQUIRED ]]; then
-    NETWORK_STATE="unstable"
-  else
-    NETWORK_STATE="verifying"
-  fi
-  local detail="${missing}获取失败；沿用上次有效结果"
+  NETWORK_STATE="probe_failed"
+  local reasons=""
+  [[ -z "$cn" ]] && reasons="国内：${CN_ERROR:-未返回有效 IPv4 (HTTP ${CN_HTTP_CODE:-000})}"
+  [[ -z "$intl" ]] && reasons+="${reasons:+；}国外：${INTL_ERROR:-未返回有效 IPv4 (HTTP ${INTL_HTTP_CODE:-000})}"
+  [[ -z "$gfw" ]] && reasons+="${reasons:+；}谷歌侧：${GFW_ERROR:-未返回有效 IPv4 (HTTP ${GFW_HTTP_CODE:-000})}"
+  local detail="${reasons}；本轮不使用旧 IP，不扣三路探测分"
   write_probe_state
-  write_preserved_status "$NETWORK_STATE" "$FAILURE_COUNT" 0 "$detail"
+  write_probe_failed_status "$NETWORK_STATE" "$FAILURE_COUNT" 0 "$detail"
   record_history "failure" "${gfw:-${intl:-${STABLE_IP:-?}}}" 0
-  log "⏳ 出口探测接口波动：${missing}获取失败（连续 ${FAILURE_COUNT} 次），保留出口 ${STABLE_IP:-未知}"
+  log "⏳ 出口探测失败：${missing}获取失败（连续 ${FAILURE_COUNT} 次），本轮不提交旧 IP；${reasons}"
   return 1
 }
 
@@ -550,9 +560,9 @@ confirm_or_commit_probe() {
 
     if [[ $PENDING_COUNT -lt $CONFIRM_REQUIRED ]]; then
       NETWORK_STATE="verifying"
-      local detail="有效结果复核中；沿用上次有效结果"
+      local detail="有效结果复核中；本轮不提交旧 IP"
       write_probe_state
-      write_preserved_status "$NETWORK_STATE" 0 "$PENDING_COUNT" "$detail"
+      write_probe_failed_status "$NETWORK_STATE" 0 "$PENDING_COUNT" "$detail"
       record_history "verifying" "$tz_ip" 0
       log "⏳ 出口结果待确认：${tz_ip}（${PENDING_COUNT}/${CONFIRM_REQUIRED}），暂不替换 ${STABLE_IP}"
       return 1

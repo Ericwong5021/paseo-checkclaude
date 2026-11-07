@@ -509,13 +509,17 @@ final class BrowserBridge {
             keepOpen.onclick=()=>{closeCancelled=true;clearInterval(closeTimer);countdownText.textContent="已取消自动关闭，可继续查看报告。";keepOpen.remove();};
             content.replaceChildren();
             const score=Number(c.score||0), safe=score>=90&&c.grade==="优秀"&&c.consistent==="1";
-            const riskLevel=txt(c.risklevel||c.grade),riskClass=riskLevel==="安全"?"good":riskLevel==="低风险"?"caution":riskLevel==="中风险"?"warn":"bad";
+            const routeKnown=c.probe_state ? c.probe_state==="ok" : (c.consistent==="0"||c.consistent==="1");
+            const routeLabel=routeKnown?(c.consistent==="1"?"三路一致":"三路不一致"):"探测未完成";
+            const routeClass=routeKnown?(c.consistent==="1"?"good":"bad"):"neutral";
+            const routeDetail=routeKnown?(c.consistent==="1"?"国内、国外与谷歌侧出口一致":"检测到分流、PAC或不同出口"):txt(c.probe_detail||n.network_detail,"探测未完成，不扣分");
+            const riskLevel=txt(c.risklevel||c.grade),riskClass=riskLevel==="安全"?"good":riskLevel==="低风险"?"caution":riskLevel==="中风险"?"warn":riskLevel==="待复测"?"neutral":"bad";
             const summary=element("div","summary");
-            [[score+" / 100","环境得分",riskClass],[riskLevel,"使用风险",riskClass],[txt(c.country),"出口国家",""],[c.consistent==="1"?"三路一致":"三路不一致","出口状态",c.consistent==="1"?"good":"bad"]].forEach(x=>{const m=element("div","metric "+(x[2]||""));m.append(element("b","",x[0]),element("span","",x[1]));summary.append(m);});
+            [[score+" / 100","环境得分",riskClass],[riskLevel,"使用风险",riskClass],[txt(c.country),"出口国家",""],[routeLabel,"出口状态",routeClass]].forEach(x=>{const m=element("div","metric "+(x[2]||""));m.append(element("b","",x[0]),element("span","",x[1]));summary.append(m);});
             content.append(summary,element("div","verdict "+(safe?"good":score>=70?"warn":"bad"),txt(c.verdict)));
 
             const matrixSection=element("section"); matrixSection.append(element("h2","","信号一致性矩阵"),element("p","desc","比单项数量更重要的是出口、系统和浏览器彼此是否自洽。")); const matrixHost=element("div","matrix"); matrixSection.append(matrixHost); content.append(matrixSection);
-            matrix(matrixHost,"三路出口",c.consistent==="1"?"good":"bad",c.consistent==="1"?"国内、国外与谷歌侧出口一致":"检测到分流、PAC或不同出口");
+            matrix(matrixHost,"三路出口",routeClass,routeDetail);
             matrix(matrixHost,"系统时区 ↔ 出口时区",c.systz&&c.iptz&&c.systz===c.iptz?"good":c.iptz&&c.iptz!=="?"?"bad":"neutral",txt(c.systz)+" ↔ "+txt(c.iptz));
             matrix(matrixHost,"浏览器时区 ↔ 出口时区",b.tz&&c.iptz&&b.tz===c.iptz?"good":b.tz&&c.iptz?"bad":"neutral",txt(b.tz)+" ↔ "+txt(c.iptz));
             matrix(matrixHost,"WebRTC ↔ 权威出口",b.rtc_status==="none"?"good":b.rtc_status==="ok"?(sameIP(b.rtc_srflx,n.gfw||c.ip)?"good":"bad"):"neutral",b.rtc_status==="none"?"无公网候选":txt(b.rtc_srflx)+" ↔ "+txt(n.gfw||c.ip));

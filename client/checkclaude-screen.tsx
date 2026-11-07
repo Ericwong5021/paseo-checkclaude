@@ -8,7 +8,7 @@ import {
   fullCreditCount,
   groupSignals,
   relativeTime,
-  scoreColor,
+  snapshotColor,
   scoreVerdict,
   sortGains,
   type SignalGroup,
@@ -337,7 +337,7 @@ function ScoreCard(props: {
       </View>
     );
   }
-  const color = scoreColor(theme, snapshot.score);
+  const color = snapshotColor(theme, snapshot);
   const full = fullCreditCount(snapshot);
   const ratio = Math.max(0, Math.min(1, snapshot.score / 100));
   return (

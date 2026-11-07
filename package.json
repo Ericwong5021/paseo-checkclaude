@@ -1,6 +1,6 @@
 {
   "name": "paseo-checkclaude",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CheckClaude for Paseo: score this machine's Claude environment from the editor",
   "license": "MIT",
   "keywords": [
@@ -31,7 +31,8 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "embed": "node server/scripts/generate-embedded.mjs"
+    "embed": "node server/scripts/generate-embedded.mjs",
+    "test": "bash tests/probe-failure.sh"
   },
   "devDependencies": {
     "@getpaseo/plugin": "0.15.1",

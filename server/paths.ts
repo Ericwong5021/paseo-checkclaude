@@ -84,8 +84,9 @@ export async function materializeProbe(): Promise<string | null> {
   if (!probeSupported()) return null;
   const file = probeCachePath();
   const binary = gunzipSync(Buffer.from(PROBE_BINARY_GZIP_BASE64, "base64"));
-  const existing = await fs.stat(file).catch(() => null);
-  if (existing?.isFile() && existing.size === binary.length && (existing.mode & 0o111) !== 0) {
+  const existing = await fs.readFile(file).catch(() => null);
+  if (existing?.equals(binary)) {
+    await fs.chmod(file, 0o700);
     return file;
   }
   await ensureDir(path.dirname(file));
